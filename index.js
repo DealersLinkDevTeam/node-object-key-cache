@@ -1,7 +1,7 @@
 // index.js
 
 // Dependencies
-const __ = require('@mediaxpost/lodashext');
+const __ = require('@dealerslink/lodash-extended');
 const MemoryCache = require('@mediaxpost/memory-cache');
 const LogStub = require('logstub');
 const redis = require('redis');
