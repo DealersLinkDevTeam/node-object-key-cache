@@ -1,6 +1,6 @@
 {
   "name": "@dealerslink/node-object-key-cache",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A Promise-based, object-key, cache extension for Redis and MemoryCache.",
   "main": "index.js",
   "husky": {
@@ -20,23 +20,23 @@
   "author": "Jay Reardon",
   "devDependencies": {
     "chai": "^4.1.2",
-    "codacy-coverage": "^2.1.1",
-    "cross-env": "^5.1.4",
-    "eslint": "^4.19.1",
-    "gulp": "^3.9.1",
-    "gulp-eslint": "^4.0.2",
-    "gulp-mocha": "^5.0.0",
-    "gulp-prettier": "^1.1.0",
+    "codacy-coverage": "^3.0.0",
+    "cross-env": "^5.2.0",
+    "eslint": "^5.4.0",
+    "gulp": "^4.0.0",
+    "gulp-eslint": "^5.0.0",
+    "gulp-mocha": "^6.0.0",
+    "gulp-prettier": "^2.0.0",
     "husky": "^0.15.0-rc.13",
-    "mocha": "^5.1.1",
-    "nyc": "^13.0.0",
-    "prettier": "^1.12.1"
+    "mocha": "^5.2.0",
+    "nyc": "^13.0.1",
+    "prettier": "^1.14.2"
   },
   "dependencies": {
-    "@dealerslink/lodash-extended": "^1.0.0",
-    "@mediaxpost/memory-cache": "^1.1.1-1",
+    "@dealerslink/lodash-extended": "^1.1.0",
+    "@mediaxpost/memory-cache": "^1.2.0",
     "bluebird": "^3.5.1",
-    "logstub": "^1.1.2",
+    "logstub": "^1.2.0",
     "redis": "^2.8.0"
   }
 }
