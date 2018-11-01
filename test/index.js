@@ -6,6 +6,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const redis = require('redis');
 const ObjectKeyCache = require('..');
+const MemoryCache = require('@mediaxpost/memory-cache');
 
 const testObj = { where: { dealerID: -1, offset: 0, limit: 20, table: 'vehicle' } };
 
@@ -607,6 +608,7 @@ describe('Object Key Cache -- Bad Redis Credentials', () => {
       .connect()
       .then(() => {
         expect(cache.connected).to.be.equal(true);
+        expect(cache.cache).to.be.instanceof(MemoryCache);
         done();
       })
       .catch((err) => {
