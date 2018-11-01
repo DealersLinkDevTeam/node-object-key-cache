@@ -12,13 +12,22 @@ const memCache = new MemoryCache();
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
 
-const defaults = { failback: true };
+const defaults = {
+  failover: true //,
+  // retry_strategy: (options) => {
+  //   if (options.error.code === 'ECONNREFUSED') {
+  //     // This will suppress the ECONNREFUSED unhandled exception
+  //     // that results in app crash
+  //     return new Error('The server refused the connection');
+  //   }
+  // }
+};
 
 class ObjectKeyCache {
   constructor(config, credentials, logger) {
     this.logger = logger || new LogStub();
     this.connected = false;
-    this.cacheConfig = __.merge(Object.assign(defaults), config || {});
+    this.cacheConfig = __.merge(Object.assign({}, defaults), config || {});
     // config.cache;
     // this.ttl = this.cacheConfig.ttl;
     this.creds = credentials;
@@ -63,7 +72,7 @@ class ObjectKeyCache {
   connect() {
     return new Promise((resolve, reject) => {
       memCache.once('connect', () => {
-        this.logger.debug('Cache Connected');
+        this.logger.debug('Cache Connected (Memory)');
         this.connected = true;
         resolve(this.cache);
       });
@@ -74,19 +83,23 @@ class ObjectKeyCache {
 
       this.creds.port = this.creds.port || 3306;
       if (__.isUnset(this.creds.host)) {
-        this.cache = memCache.createClient(this.cacheConfig);
+        this.memCache = memCache.createClient(this.cacheConfig);
+        this.cache = this.memCache;
       } else {
         this.cache = redis.createClient(this.creds.port, this.creds.host, this.cacheConfig);
+
         this.cache.once('connect', () => {
-          this.logger.debug('Cache Connected');
+          this.logger.debug('Cache Connected (Redis)');
           this.connected = true;
           resolve(this.cache);
         });
+
         this.cache.once('error', (err) => {
-          if (this.cacheConfig.failback) {
+          if (this.cacheConfig.failover) {
             this.logger.debug('Redis failed with error -- Fallback to MemoryCache');
             this.logger.error(err);
-            this.cache = memCache.createClient();
+            this.cache = memCache.createClient(this.cacheConfig);
+            resolve(this.cache);
           } else {
             this.logger.debug('Cache Connection Failed');
             reject(err);
