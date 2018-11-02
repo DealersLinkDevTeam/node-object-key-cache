@@ -38,6 +38,8 @@ class ObjectKeyCache {
       };
     }
     // config.credentials.redis;
+    this.redisCache = null;
+    this.memCache = null;
     this.cache = null;
   }
 
@@ -73,34 +75,27 @@ class ObjectKeyCache {
   // Returns a promise that signifies when the connection to the cache is ready
   connect() {
     return new Promise((resolve, reject) => {
-      memCache.once('connect', () => {
-        this.logger.debug('Cache Connected (Memory)');
-        this.connected = true;
-        resolve(this.cache);
-      });
-      memCache.once('error', (err) => {
-        this.logger.debug('Cache Connection Failed');
-        reject(err);
-      });
-
+      this.memCache = memCache.createClient(this.cacheConfig);
       this.creds.port = this.creds.port || 3306;
       if (__.isUnset(this.creds.host)) {
-        this.memCache = memCache.createClient(this.cacheConfig);
+        this.logger.debug('Cache Connected (Memory)');
         this.cache = this.memCache;
+        this.connected = true;
+        resolve(this.cache);
       } else {
-        this.cache = redis.createClient(this.creds.port, this.creds.host, this.cacheConfig);
-
-        this.cache.once('connect', () => {
+        this.redisCache = redis.createClient(this.creds.port, this.creds.host, this.cacheConfig);
+        this.redisCache.once('connect', () => {
           this.logger.debug('Cache Connected (Redis)');
+          this.cache = this.redisCache;
           this.connected = true;
           resolve(this.cache);
         });
-
-        this.cache.once('error', (err) => {
+        this.redisCache.once('error', (err) => {
           if (this.cacheConfig.failover) {
-            this.logger.debug('Redis failed with error -- Fallback to MemoryCache');
+            this.logger.debug('Redis failed with error failing over to MemoryCache');
             this.logger.error(err);
-            this.cache = memCache.createClient(this.cacheConfig);
+            this.cache = this.memCache;
+            this.connected = true;
             resolve(this.cache);
           } else {
             this.logger.debug('Cache Connection Failed');
@@ -258,9 +253,11 @@ class ObjectKeyCache {
     let prm;
     if (this.connected) {
       prm = new Promise((resolve, reject) => {
-        this.cache.on('end', () => {
+        this.cache.once('end', () => {
           this.logger.debug('Cache Closed');
           this.connected = false;
+          this.redisCache = null;
+          this.memCache = null;
           resolve(this.cache);
         });
         this.cache.on('error', (err) => {
