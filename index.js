@@ -125,7 +125,7 @@ class ObjectKeyCache {
           if (__.isUnset(err.errno) || (err.errno && err.errno !== 'ECONNREFUSED')) {
             this.logger.error(err);
           }
-          if (err.errno && err.errno === 'ECONNREFUSED' && this.connected) {
+          if (err.errno && err.errno === 'ECONNREFUSED' && this.connected && this.cache instanceof redis.RedisClient) {
             this.logger.debug('Redis connection went away, reverting to MemoryCache');
             this.cache = this.memCache;
           }
