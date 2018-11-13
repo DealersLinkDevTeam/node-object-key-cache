@@ -79,7 +79,7 @@ class ObjectKeyCache {
     }
     return new Promise((resolve, reject) => {
       this.memCache = memCache.createClient(this.cacheConfig);
-      this.creds.port = this.creds.port || 3306;
+      this.creds.port = this.creds.port || 6379;
       if (__.isUnset(this.creds.host)) {
         this.logger.debug('Cache Connected (Memory)');
         this.cache = this.memCache;
