@@ -644,6 +644,10 @@ describe('ObjectKeyCache -- External Cache', () => {
     });
   });
 
+  after(() => {
+    client.quit();
+  });
+
   it('attachToClient', () => {
     cache.attachToClient(client);
     expect(cache.connected).to.be.equal(true);
