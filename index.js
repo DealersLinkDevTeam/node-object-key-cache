@@ -102,6 +102,11 @@ class ObjectKeyCache {
             reject(err);
           }
         });
+        this.redisCache.on('error', (err) => {
+          // Trap and log any subsequent errors that may get called after we've already caught the first
+          // Redis will bomb out without this if there is no connection
+          this.logger.error(err);
+        });
       }
     });
   }

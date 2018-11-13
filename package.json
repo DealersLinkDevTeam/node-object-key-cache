@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "test": "nyc mocha",
+    "test": "nyc mocha --exit",
     "build": "gulp",
     "fix": "gulp fix",
     "lint": "gulp lint",
