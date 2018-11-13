@@ -74,9 +74,12 @@ class ObjectKeyCache {
 
   // Returns a promise that signifies when the connection to the cache is ready
   connect() {
+    if (this.connected) {
+      return Promise.reject(new Error('Object Key Cache is already connected'));
+    }
     return new Promise((resolve, reject) => {
       this.memCache = memCache.createClient(this.cacheConfig);
-      this.creds.port = this.creds.port || 3306;
+      this.creds.port = this.creds.port || 6379;
       if (__.isUnset(this.creds.host)) {
         this.logger.debug('Cache Connected (Memory)');
         this.cache = this.memCache;
@@ -86,26 +89,46 @@ class ObjectKeyCache {
         this.redisCache = redis.createClient(this.creds.port, this.creds.host, this.cacheConfig);
         this.redisCache.once('connect', () => {
           this.logger.debug('Cache Connected (Redis)');
+          // This also has the benefit of automatically switching to the Redis client when it becomes
+          // available, if there was a connection problem initially
           this.cache = this.redisCache;
+          // Only resolve when not already connected
+          if (!this.connected) {
+            resolve(this.cache);
+          }
           this.connected = true;
-          resolve(this.cache);
         });
         this.redisCache.once('error', (err) => {
           if (this.cacheConfig.failover) {
             this.logger.debug('Redis failed with error failing over to MemoryCache');
             this.logger.error(err);
             this.cache = this.memCache;
+            // Only resolve when not already connected
+            if (!this.connected) {
+              resolve(this.cache);
+            }
             this.connected = true;
-            resolve(this.cache);
           } else {
             this.logger.debug('Cache Connection Failed');
             reject(err);
           }
         });
+        this.redisCache.on('connect', () => {
+          if (this.connected && this.cache && this.cache instanceof MemoryCache) {
+            this.logger.debug('Redis connection came back, reverting from MemoryCache to RedisClient');
+          }
+        });
         this.redisCache.on('error', (err) => {
-          // Trap and log any subsequent errors that may get called after we've already caught the first
-          // Redis will bomb out without this if there is no connection
-          this.logger.error(err);
+          // Trap and log any non ECONNREFUSED errors that may get called after we've already caught the first
+          // Redis will bomb out without this if there is no connection as ECONNREFUSED is called multiple times
+          // as the Redis client attempts to reconnect continuously
+          if (__.isUnset(err.errno) || (err.errno && err.errno !== 'ECONNREFUSED')) {
+            this.logger.error(err);
+          }
+          if (err.errno && err.errno === 'ECONNREFUSED' && this.connected) {
+            this.logger.debug('Redis connection went away, reverting to MemoryCache');
+            this.cache = this.memCache;
+          }
         });
       }
     });
